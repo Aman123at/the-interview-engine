@@ -1,0 +1,69 @@
+# interview-sandbox-react:latest
+#
+# Heavy installs at BUILD time:
+#   - Node 20 LTS runtime
+#   - jq, tini, curl
+#   - Globally-cached `create-vite` + `create-next-app` (avoids npx fetch)
+#   - Pre-warm npm cache with Vite / Next runtime tarballs
+#
+# Light, customization-driven work happens at container start via init-react.sh.
+
+FROM node:20-bookworm-slim
+
+ENV NODE_ENV=development \
+    CI=true \
+    NPM_CONFIG_FUND=false \
+    NPM_CONFIG_AUDIT=false \
+    HOME=/home/sandbox
+
+# OS tooling — tini gives us proper signal handling as PID 1 when the init
+# script execs the dev server.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends jq tini ca-certificates curl \
+ && rm -rf /var/lib/apt/lists/*
+
+# Non-root user owning /sandbox and $HOME.
+RUN useradd --create-home --shell /bin/bash --uid 10001 sandbox \
+ && mkdir -p /sandbox \
+ && chown -R sandbox:sandbox /sandbox /home/sandbox
+
+# Prime the npm cache with the heavy scaffolders + the Tailwind-v4 / shadcn
+# runtime deps so the per-session init install is mostly cache-copy. This is
+# what keeps the shadcn install (radix-ui + geist fonts) fast AND under the
+# 1 GiB container cap at runtime.
+RUN npm config set fund false \
+ && npm config set audit false \
+ && npm install -g create-vite@latest create-next-app@14 \
+ && npm cache add vite@latest \
+ && npm cache add next@14 \
+ && npm cache add react@18 \
+ && npm cache add react-dom@18 \
+ && npm cache add tailwindcss@4 \
+ && npm cache add @tailwindcss/vite@4 \
+ && npm cache add class-variance-authority \
+ && npm cache add clsx \
+ && npm cache add tailwind-merge \
+ && npm cache add lucide-react \
+ && npm cache add radix-ui \
+ && npm cache add tw-animate-css \
+ && npm cache add @fontsource-variable/geist \
+ && npm cache add shadcn
+
+# Init script + shared progress helpers.
+COPY scripts/lib/progress.sh /usr/local/bin/lib/progress.sh
+COPY scripts/init-react.sh   /usr/local/bin/init
+RUN chmod 0755 /usr/local/bin/init /usr/local/bin/lib/progress.sh
+
+WORKDIR /sandbox
+USER sandbox
+
+# Generous start period — init does the heavy `npm install` and the dev
+# server isn't expected to respond until that finishes.
+HEALTHCHECK --interval=15s --timeout=5s --start-period=300s --retries=4 \
+  CMD curl -fsS http://127.0.0.1:5173 >/dev/null \
+   || curl -fsS http://127.0.0.1:3000 >/dev/null \
+   || exit 1
+
+ENV FRAMEWORK=react
+
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/init"]

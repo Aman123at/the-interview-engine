@@ -1,0 +1,58 @@
+# Local dev dependencies for the interview-sandbox-server.
+#
+# The per-session sandbox containers are NOT defined here — they are spawned
+# by the API at runtime (Phase 6) using the exact flags documented in
+# docker/README.md. This file only brings up the persistent dev deps:
+#
+#   - Postgres for the application DB
+#   - A stub `api` service that runs the existing dev server inside Docker if
+#     you prefer not to run pnpm dev on your host. Default profile leaves it
+#     off; opt in with `--profile api`.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: interview-sandbox-pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: interview_sandbox
+    ports:
+      - "5432:5432"
+    volumes:
+      - interview_sandbox_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d interview_sandbox"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Optional: run the API itself in a container. Leave it off by default so
+  # `pnpm dev` on the host (with tsx watch) remains the primary loop.
+  api:
+    profiles: ["api"]
+    image: node:20-bookworm-slim
+    working_dir: /workspace
+    command: ["sh", "-c", "corepack enable && pnpm install --frozen-lockfile && pnpm dev"]
+    environment:
+      NODE_ENV: development
+      PORT: "4000"
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/interview_sandbox
+      CORS_ORIGINS: http://localhost:3000
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET in your shell}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET in your shell}
+    volumes:
+      - .:/workspace
+      # Use a named volume for node_modules so the host's macOS/Linux mismatch
+      # doesn't corrupt native deps (bcrypt).
+      - interview_sandbox_node_modules:/workspace/node_modules
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  interview_sandbox_pg:
+  interview_sandbox_node_modules:

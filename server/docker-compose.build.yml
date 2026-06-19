@@ -1,0 +1,42 @@
+# Local build + push pipeline.
+#
+# You build images on your laptop, push them to Docker Hub (or any OCI registry),
+# then `docker compose -f docker-compose.prod.yml pull && up -d` on the VPS.
+# Source code never lands on the VPS.
+#
+# Usage:
+#   # 1) Set the image tags + the public URLs that get baked into the client.
+#   cp .env.prod.example .env.prod        # fill APP_DOMAIN, SERVER_IMAGE, CLIENT_IMAGE
+#
+#   # 2) Log in once.
+#   docker login
+#
+#   # 3) Build both (uses sibling ../client repo for the client build context).
+#   docker compose -f docker-compose.build.yml --env-file .env.prod build
+#
+#   # 4) Push to the registry.
+#   docker compose -f docker-compose.build.yml --env-file .env.prod push
+#
+# For multi-arch (e.g. building on Apple Silicon for an amd64 VPS) use buildx
+# directly instead of `compose build`:
+#   docker buildx build --platform linux/amd64 -t $SERVER_IMAGE --push .
+#   docker buildx build --platform linux/amd64 \
+#     --build-arg NEXT_PUBLIC_API_URL=https://api.$APP_DOMAIN \
+#     --build-arg NEXT_PUBLIC_WS_URL=wss://api.$APP_DOMAIN \
+#     -t $CLIENT_IMAGE --push ../client
+
+services:
+  server:
+    image: ${SERVER_IMAGE:?set SERVER_IMAGE in .env.prod}
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+  client:
+    image: ${CLIENT_IMAGE:?set CLIENT_IMAGE in .env.prod}
+    build:
+      context: ../client
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://api.${APP_DOMAIN:?set APP_DOMAIN in .env.prod}
+        NEXT_PUBLIC_WS_URL: wss://api.${APP_DOMAIN}

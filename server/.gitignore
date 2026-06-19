@@ -1,0 +1,17 @@
+node_modules
+dist
+.env
+.env.local
+.env.prod
+infra/secrets/*.txt
+*.log
+.DS_Store
+coverage
+.vscode
+.idea
+.claude
+CHANGES_PHASE11.md
+CLAUDE.md
+scripts
+infra
+.env

@@ -1,0 +1,30 @@
+# interview-sandbox-fullstack:latest
+#
+# Full-stack combo image: React (Vite) + Node + an in-container database, all in
+# ONE container. Built FROM the node image so it inherits Postgres + MongoDB
+# (server + clients) and the npm cache — we only add the front-end deps and swap
+# the init script.
+#
+# Build order: `interview-sandbox-node` MUST be built first (build-all.sh does).
+
+FROM interview-sandbox-node:latest
+
+USER root
+COPY scripts/init-fullstack.sh /usr/local/bin/init
+RUN chmod 0755 /usr/local/bin/init
+USER sandbox
+
+# Prime the npm cache with the front-end + ORM deps so per-session installs are
+# mostly cache-copy (keeps init fast under the 2 GiB combo cap).
+RUN npm cache add react@18 react-dom@18 vite@5 @vitejs/plugin-react@4 mongoose@8 \
+      tailwindcss@4 @tailwindcss/vite@4 class-variance-authority clsx tailwind-merge \
+      lucide-react radix-ui tw-animate-css shadcn @fontsource-variable/geist \
+ || true
+
+# Vite is the preview surface (it proxies /api → the Node server on 3000).
+HEALTHCHECK --interval=15s --timeout=5s --start-period=300s --retries=4 \
+  CMD curl -fsS http://127.0.0.1:5173 >/dev/null || exit 1
+
+ENV FRAMEWORK=fullstack
+
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/init"]

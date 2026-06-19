@@ -1,0 +1,82 @@
+# interview-sandbox-node:latest
+
+FROM node:20-bookworm-slim
+
+ENV NODE_ENV=development \
+    NPM_CONFIG_FUND=false \
+    NPM_CONFIG_AUDIT=false \
+    HOME=/home/sandbox
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends jq tini ca-certificates curl gnupg \
+ && rm -rf /var/lib/apt/lists/*
+
+# MongoDB shell (mongosh) + server (mongod). The session runs its OWN mongod
+# inside the volume (dbpath=/sandbox/.mongo) as uid 10001.
+#   - mongosh: from the official apt repo (published for Debian arm64 + amd64).
+#   - mongod : MongoDB does NOT publish the *server* for Debian arm64, so we pull
+#     the platform tarball (ubuntu2204 build runs fine on bookworm) and drop the
+#     single binary on PATH. Arch-aware: arm64→aarch64, amd64→x86_64.
+ARG MONGO_VER=7.0.14
+RUN curl -fsSL https://pgp.mongodb.com/server-7.0.asc \
+      | gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor \
+ && echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] http://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" \
+      > /etc/apt/sources.list.d/mongodb-org-7.0.list \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends mongodb-mongosh \
+ && rm -rf /var/lib/apt/lists/* \
+ && arch="$(dpkg --print-architecture)" \
+ && case "$arch" in \
+      arm64) MARCH=aarch64 ;; \
+      amd64) MARCH=x86_64  ;; \
+      *) echo "unsupported arch $arch" >&2; exit 1 ;; \
+    esac \
+ && curl -fsSL "https://fastdl.mongodb.org/linux/mongodb-linux-${MARCH}-ubuntu2204-${MONGO_VER}.tgz" -o /tmp/mongo.tgz \
+ && tar -xzf /tmp/mongo.tgz -C /tmp \
+ && cp "/tmp/mongodb-linux-${MARCH}-ubuntu2204-${MONGO_VER}/bin/mongod" /usr/local/bin/mongod \
+ && chmod 0755 /usr/local/bin/mongod \
+ && rm -rf /tmp/mongo.tgz "/tmp/mongodb-linux-${MARCH}-ubuntu2204-${MONGO_VER}"
+
+# PostgreSQL server + client (psql). The session runs its OWN cluster inside
+# the volume (PGDATA=/sandbox/.pgdata) as uid 10001 — we do NOT use Debian's
+# service/cluster machinery. Symlink the server binaries onto PATH so both the
+# init script and the `psql` terminal tab can find them regardless of the
+# packaged PG major version.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends postgresql postgresql-client \
+ && rm -rf /var/lib/apt/lists/* \
+ && PG_BIN="$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)" \
+ && for b in initdb pg_ctl postgres psql createdb pg_isready; do \
+      ln -sf "$PG_BIN/$b" "/usr/local/bin/$b"; \
+    done
+
+# MariaDB — the in-container MySQL engine (wire-compatible; mysql2 talks to it
+# unchanged). The session runs its OWN mariadbd as uid 10001 (datadir on the
+# volume, socket on /tmp, skip-grant-tables for no-auth loopback access). The
+# server binary lives in /usr/sbin, which isn't on the sandbox user's PATH, so
+# symlink it onto PATH alongside the clients (/usr/bin/mariadb*).
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends mariadb-server mariadb-client \
+ && rm -rf /var/lib/apt/lists/* \
+ && ln -sf /usr/sbin/mariadbd /usr/local/bin/mariadbd
+
+RUN useradd --create-home --shell /bin/bash --uid 10001 sandbox \
+ && mkdir -p /sandbox \
+ && chown -R sandbox:sandbox /sandbox /home/sandbox
+
+# Prime npm cache for the most common pickable libraries.
+RUN npm cache add express@4 typescript@5 tsx@4 pg@8 mysql2 mongodb
+
+COPY scripts/lib/progress.sh /usr/local/bin/lib/progress.sh
+COPY scripts/init-node.sh    /usr/local/bin/init
+RUN chmod 0755 /usr/local/bin/init /usr/local/bin/lib/progress.sh
+
+WORKDIR /sandbox
+USER sandbox
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=180s --retries=4 \
+  CMD curl -fsS http://127.0.0.1:3000 >/dev/null || exit 1
+
+ENV FRAMEWORK=node
+
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/init"]

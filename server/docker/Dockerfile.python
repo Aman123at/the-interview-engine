@@ -1,0 +1,40 @@
+# interview-sandbox-python:latest
+
+FROM python:3.12-slim-bookworm
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=0 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    HOME=/home/sandbox
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends jq tini ca-certificates curl build-essential \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN useradd --create-home --shell /bin/bash --uid 10001 sandbox \
+ && mkdir -p /sandbox \
+ && chown -R sandbox:sandbox /sandbox /home/sandbox
+
+# Pre-download the framework wheels into a shared cache the venv pip can reuse.
+# `pip download` populates the system pip cache so per-session installs become
+# wheel-copy instead of full network fetches.
+USER sandbox
+RUN python3 -m pip install --user 'fastapi' 'uvicorn[standard]' 'django>=5' 'flask' \
+ && python3 -m pip uninstall -y fastapi uvicorn django flask
+USER root
+
+COPY scripts/lib/progress.sh /usr/local/bin/lib/progress.sh
+COPY scripts/init-python.sh  /usr/local/bin/init
+RUN chmod 0755 /usr/local/bin/init /usr/local/bin/lib/progress.sh
+
+WORKDIR /sandbox
+USER sandbox
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=180s --retries=4 \
+  CMD curl -fsS http://127.0.0.1:8000 >/dev/null \
+   || curl -fsS http://127.0.0.1:5000 >/dev/null \
+   || exit 0   # plain-python sandbox has no server — always healthy
+
+ENV FRAMEWORK=python
+
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/init"]

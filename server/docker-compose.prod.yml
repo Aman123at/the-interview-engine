@@ -1,0 +1,215 @@
+# Production stack for the Interview Sandbox platform.
+#
+# Components:
+#   traefik       — edge router, TLS termination, ACME DNS-01 wildcard.
+#   dockerproxy   — read-only Docker socket gateway, ONLY surface the server uses.
+#   postgres      — application DB (named volume).
+#   server        — Node API + socket.io (reaches Docker via dockerproxy).
+#   client        — Next.js standalone (build-time NEXT_PUBLIC_* args).
+#
+# Networks:
+#   proxy     — traefik ↔ client / server
+#   internal  — server ↔ postgres ↔ dockerproxy
+#   sandbox   — traefik + server + every session container (FIXED name; the
+#               server's dockerode attaches sandbox containers to it by name).
+#
+# Build contexts assume the typical sibling-repo layout:
+#   InterviewMe/server          ← this compose lives here
+#   InterviewMe/client
+#
+# Run from this directory:
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+#
+# Secrets:
+#   ./infra/secrets/pg_password.txt    (chmod 600)
+#   ./infra/secrets/cf_dns_token.txt   (chmod 600) — Cloudflare API token w/ Zone:DNS:Edit
+#
+# Replace `interviewme.com` with your real apex via APP_DOMAIN in .env.prod.
+
+services:
+  traefik:
+    image: traefik:v3.1
+    restart: unless-stopped
+    command:
+      - "--configfile=/etc/traefik/traefik.yml"
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      ACME_EMAIL: ammitiwari1234@gmail.com
+      CF_DNS_API_TOKEN_FILE: /run/secrets/cf_dns_token
+    volumes:
+      - ./infra/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./infra/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - traefik_letsencrypt:/letsencrypt
+      - traefik_logs:/var/log/traefik
+      # Direct socket here is fine — the SERVER never gets it; the proxy below
+      # is what the server uses. Traefik needs it to watch Docker events for
+      # routing label changes, which is read-only by nature of the provider.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    secrets:
+      - cf_dns_token
+    networks:
+      - proxy
+      - sandbox
+
+  dockerproxy:
+    image: tecnativa/docker-socket-proxy:0.3
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      IMAGES: 1
+      VOLUMES: 1
+      NETWORKS: 1
+      EXEC: 1
+      EVENTS: 1
+      POST: 1
+      # Everything else stays 0 (read-only / blocked).
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - internal
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_DB: interview_sandbox
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    secrets:
+      - pg_password
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d interview_sandbox"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  server:
+    # Pulled from a registry — built and pushed locally via docker-compose.build.yml.
+    image: amantiwari7974/interviewengine-server:v1
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      LOG_LEVEL: info
+      # DB password injected from secret at start by the entrypoint.
+      DATABASE_URL: postgres://app:__PG_PASSWORD__@postgres:5432/interview_sandbox
+      DATABASE_PASSWORD_FILE: /run/secrets/pg_password
+      JWT_ACCESS_SECRET_FILE: /run/secrets/jwt_access_secret
+      JWT_REFRESH_SECRET_FILE: /run/secrets/jwt_refresh_secret
+      # Docker access — socket-proxy ONLY.
+      DOCKER_HOST: tcp://dockerproxy:2375
+      # Preview routing — subdomain mode in prod.
+      PREVIEW_MODE: subdomain
+      PREVIEW_BASE_DOMAIN: ${APP_DOMAIN}
+      PREVIEW_SCHEME: https
+      SANDBOX_NETWORK: sandbox
+      TRAEFIK_CERTRESOLVER: le
+      TRAEFIK_ENTRYPOINT: websecure
+      TRAEFIK_PREVIEW_MIDDLEWARE: preview-csp@file
+      # Cookies / CORS.
+      CLIENT_ORIGIN: https://${APP_DOMAIN}
+      CORS_ORIGINS: https://${APP_DOMAIN}
+      COOKIE_DOMAIN: .${APP_DOMAIN}
+      COOKIE_SECURE: "true"
+      COOKIE_SAMESITE: lax
+    secrets:
+      # The server runs as non-root uid 10001; default secret mode 0400 owned
+      # by root would be unreadable. Stamp ownership + mode explicitly.
+      - source: pg_password
+        target: pg_password
+        uid: "10001"
+        gid: "10001"
+        mode: 0400
+      - source: jwt_access_secret
+        target: jwt_access_secret
+        uid: "10001"
+        gid: "10001"
+        mode: 0400
+      - source: jwt_refresh_secret
+        target: jwt_refresh_secret
+        uid: "10001"
+        gid: "10001"
+        mode: 0400
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dockerproxy:
+        condition: service_started
+    networks:
+      - proxy
+      - internal
+      - sandbox
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      # API + socket.io (websocket upgrade is transparent to Traefik v3).
+      - "traefik.http.routers.api.rule=Host(`api.${APP_DOMAIN}`)"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.tls=true"
+      - "traefik.http.routers.api.tls.certresolver=le"
+      # THIS router requests the wildcard cert that every other router reuses.
+      - "traefik.http.routers.api.tls.domains[0].main=${APP_DOMAIN}"
+      - "traefik.http.routers.api.tls.domains[0].sans=*.${APP_DOMAIN}"
+      - "traefik.http.routers.api.middlewares=app-sec-headers@file"
+      - "traefik.http.services.api.loadbalancer.server.port=4000"
+
+  client:
+    # Pulled from a registry — built and pushed locally via docker-compose.build.yml.
+    # NEXT_PUBLIC_* values are baked into THIS image at build time on your laptop,
+    # so a registry-pulled client image is already pinned to a specific APP_DOMAIN.
+    # If you change APP_DOMAIN, rebuild + push + bump CLIENT_IMAGE.
+    image: amantiwari7974/interviewengine-client:v1
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      - server
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.app.rule=Host(`${APP_DOMAIN}`) || Host(`www.${APP_DOMAIN}`)"
+      - "traefik.http.routers.app.entrypoints=websecure"
+      - "traefik.http.routers.app.tls=true"
+      - "traefik.http.routers.app.tls.certresolver=le"
+      - "traefik.http.routers.app.middlewares=app-sec-headers@file"
+      - "traefik.http.services.app.loadbalancer.server.port=3000"
+
+networks:
+  # All three networks use FIXED names (no Compose project prefix) because the
+  # `traefik.docker.network=<name>` labels on each service MUST match the
+  # actual Docker network name. With the default project-prefixed names
+  # (`<project>_proxy`), Traefik logs "Could not find network named 'proxy'"
+  # and routes to whatever's first on the container — which silently sends
+  # api.* traffic to the internal network where Traefik isn't even attached,
+  # producing 502/timeouts and apparent CORS failures in the browser.
+  proxy:
+    name: proxy
+  internal:
+    name: internal
+  sandbox:
+    # The server's dockerode attaches per-session containers to this network
+    # by name; keep SANDBOX_NETWORK on the server service in sync.
+    name: sandbox
+
+volumes:
+  pgdata:
+  traefik_letsencrypt:
+  traefik_logs:
+
+secrets:
+  pg_password:
+    file: ./infra/secrets/pg_password.txt
+  jwt_access_secret:
+    file: ./infra/secrets/jwt_access_secret.txt
+  jwt_refresh_secret:
+    file: ./infra/secrets/jwt_refresh_secret.txt
+  cf_dns_token:
+    file: ./infra/secrets/cf_dns_token.txt

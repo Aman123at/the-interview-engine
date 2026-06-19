@@ -1,0 +1,264 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  /* IDE-surface tokens — both themes set their own values below. Used by the
+     editor/terminal/log panes so they track the theme instead of hard-coding
+     hex. Exported as Tailwind utilities (`bg-editor-surface`, etc.). */
+  --color-editor-surface: var(--editor-surface);
+  --color-editor-surface-foreground: var(--editor-surface-foreground);
+  --color-scrollbar-thumb-hover: var(--scrollbar-thumb-hover);
+  /* `--font-roboto-sans` is provided by `next/font/google` in app/layout.tsx.
+     We chain system fallbacks after it so text stays visible at every size
+     while the woff2 is fetched (display: swap). */
+  --font-sans: var(--font-roboto-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo,
+    Monaco, Consolas, "Liberation Mono", monospace;
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* LIGHT palette — accessible, IDE-friendly neutrals with a faint cool
+     tint matched to the dark theme so swapping doesn't feel hue-shifted.
+     `muted-foreground` is darkened from the shadcn default (0.556 → 0.46)
+     so it clears WCAG AA on `muted` for ≥12px UI text. */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.15 0.005 264);
+  --card: oklch(0.995 0 0);
+  --card-foreground: oklch(0.15 0.005 264);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0.005 264);
+  --primary: oklch(0.22 0.005 264);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.965 0.003 264);
+  --secondary-foreground: oklch(0.22 0.005 264);
+  --muted: oklch(0.965 0.003 264);
+  --muted-foreground: oklch(0.46 0.005 264);
+  --accent: oklch(0.95 0.005 264);
+  --accent-foreground: oklch(0.22 0.005 264);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.9 0.005 264);
+  --input: oklch(0.9 0.005 264);
+  --ring: oklch(0.65 0.01 264);
+  /* IDE surfaces — the editor / terminal / log panes use a slightly cooler
+     near-white in light mode for visual separation from the page bg. */
+  --editor-surface: oklch(0.985 0.003 264);
+  --editor-surface-foreground: oklch(0.15 0.005 264);
+  --scrollbar-thumb-hover: oklch(0 0 0 / 18%);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  /* Subtle cool tint on the darks — modern editor feel, still neutral.
+     Tiny shifts in chroma (0.005) read as more refined than pure gray. */
+  --background: oklch(0.165 0.005 264);
+  --foreground: oklch(0.97 0 0);
+  --card: oklch(0.21 0.005 264);
+  --card-foreground: oklch(0.97 0 0);
+  --popover: oklch(0.205 0.005 264);
+  --popover-foreground: oklch(0.97 0 0);
+  --primary: oklch(0.94 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.27 0.005 264);
+  --secondary-foreground: oklch(0.97 0 0);
+  --muted: oklch(0.27 0.005 264);
+  --muted-foreground: oklch(0.7 0.003 264);
+  --accent: oklch(0.275 0.005 264);
+  --accent-foreground: oklch(0.97 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.6 0.01 264);
+  /* IDE surfaces — keep the near-black we used pre-tokens. */
+  --editor-surface: oklch(0.13 0.005 264);
+  --editor-surface-foreground: oklch(0.97 0 0);
+  --scrollbar-thumb-hover: oklch(1 0 0 / 18%);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    /* Phase 18 — base font size bump to 18px. Every rem-based Tailwind class
+       (text-xs … text-2xl, gap-2, p-3, etc.) scales proportionally so the
+       whole chrome reads larger without per-component edits.
+       Monaco + xterm use absolute px sizes (12/13 px) so code panels stay
+       compact regardless of this root value. */
+    font-size: 18px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-background text-foreground;
+    line-height: 1.6;
+    letter-spacing: -0.003em;
+    /* Roboto: tabular numerals so digits in tables / counters line up. The
+       Geist-only stylistic sets (cv11, ss03) have been dropped — they aren't
+       defined in Roboto and would be silently ignored anyway. */
+    font-feature-settings: "tnum";
+  }
+  /* Display type scale. Tailwind's default `text-*` utilities still work and
+     are the right pick for component-local text; these base rules give plain
+     <h1>-<h4> elements a calm, predictable scale at the new 18px root. */
+  h1 {
+    font-size: 1.875rem;   /* ~34px */
+    line-height: 1.2;
+    letter-spacing: -0.022em;
+    font-weight: 600;
+  }
+  h2 {
+    font-size: 1.5rem;     /* ~27px */
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+  }
+  h3 {
+    font-size: 1.2rem;     /* ~22px */
+    line-height: 1.3;
+    letter-spacing: -0.018em;
+    font-weight: 600;
+  }
+  h4 {
+    font-size: 1.05rem;    /* ~19px */
+    line-height: 1.35;
+    letter-spacing: -0.016em;
+    font-weight: 600;
+  }
+  /* Modern, less-jagged code rendering everywhere monospace is used. */
+  code, pre, .font-mono {
+    font-feature-settings: "ss01", "ss02", "ss03", "calt", "zero";
+  }
+  /* Smoother default scrollbars in WebKit — same neutral feel as the rest of
+     the dark palette. */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+    background-clip: padding-box;
+    border: 2px solid transparent;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Subtle modern polish — soft shadows + a touch of glow on focused elements.
+   --------------------------------------------------------------------------- */
+
+/* Soft drop shadows in both themes; the inset highlight only makes sense on
+   dark surfaces, so it's scoped to .dark to avoid washing out the light card. */
+[data-slot="card"] {
+  box-shadow: 0 1px 2px 0 oklch(0 0 0 / 6%);
+}
+.dark [data-slot="card"] {
+  box-shadow:
+    0 1px 0 0 oklch(1 0 0 / 4%) inset,
+    0 1px 2px 0 oklch(0 0 0 / 30%);
+}
+
+[data-slot="dialog-content"] {
+  box-shadow: 0 24px 48px -16px oklch(0 0 0 / 18%);
+}
+.dark [data-slot="dialog-content"] {
+  box-shadow:
+    0 1px 0 0 oklch(1 0 0 / 5%) inset,
+    0 24px 48px -16px oklch(0 0 0 / 60%);
+}
+
+/* Global top-of-viewport loading bar — driven by the API in-flight counter
+   (see GlobalLoadingBar.tsx). The bar slides across at a steady tempo while
+   any request is pending and fades out once the counter hits zero. */
+@keyframes loading-bar {
+  0% {
+    transform: translateX(-100%) scaleX(0.3);
+  }
+  50% {
+    transform: translateX(0) scaleX(0.6);
+  }
+  100% {
+    transform: translateX(100%) scaleX(0.3);
+  }
+}
+.animate-loading-bar {
+  animation: loading-bar 1.2s ease-in-out infinite;
+}

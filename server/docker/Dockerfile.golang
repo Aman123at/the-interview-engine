@@ -1,0 +1,43 @@
+# interview-sandbox-golang:latest
+
+FROM golang:1.25-bookworm
+
+ENV CGO_ENABLED=0 \
+    GOPATH=/home/sandbox/go \
+    GOCACHE=/home/sandbox/.cache/go-build \
+    HOME=/home/sandbox
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends jq tini ca-certificates curl \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN useradd --create-home --shell /bin/bash --uid 10001 sandbox \
+ && mkdir -p /sandbox /home/sandbox/go /home/sandbox/.cache \
+ && chown -R sandbox:sandbox /sandbox /home/sandbox
+
+# Pre-warm the Go module cache with Gin + common driver modules.
+# Go 1.22+ refuses to use go.mod when CWD is the system temp root itself
+# ("ignoring go.mod in system temp root /tmp"), so use a real subdirectory.
+USER sandbox
+RUN mkdir -p /tmp/prewarm \
+ && cd /tmp/prewarm \
+ && go mod init prewarm >/dev/null \
+ && go get github.com/gin-gonic/gin@latest \
+ && go get github.com/jackc/pgx/v5 \
+ && go get go.mongodb.org/mongo-driver/mongo \
+ && cd / && rm -rf /tmp/prewarm
+USER root
+
+COPY scripts/lib/progress.sh /usr/local/bin/lib/progress.sh
+COPY scripts/init-golang.sh  /usr/local/bin/init
+RUN chmod 0755 /usr/local/bin/init /usr/local/bin/lib/progress.sh
+
+WORKDIR /sandbox
+USER sandbox
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=180s --retries=4 \
+  CMD curl -fsS http://127.0.0.1:8080 >/dev/null || exit 1
+
+ENV FRAMEWORK=golang
+
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/init"]

@@ -1,0 +1,47 @@
+# VCS / editor
+.git
+.gitignore
+.gitattributes
+.idea
+.vscode
+*.swp
+
+# Node
+node_modules
+npm-debug.log
+pnpm-debug.log
+yarn-debug.log
+.pnpm-store
+
+# Build artifacts
+dist
+coverage
+*.tsbuildinfo
+
+# Tests / fixtures
+**/*.test.ts
+**/*.spec.ts
+src/test
+scripts/verify-*.ts
+
+# Local-only
+.env
+.env.*
+!.env.example
+docker-compose*.yml
+drizzle
+# (Phase 5 docker/ — Dockerfile.<framework> + scripts/ — IS shipped inside
+# the server image so the VPS can build per-framework sandbox base images via
+# `docker compose cp server:/app/docker ./docker && ./docker/scripts/build-all.sh`.
+# Do NOT re-ignore those paths.)
+
+# Client repo (this image is server-only)
+client
+interview-sandbox-client
+
+# Docs / misc
+README.md
+CHANGES_PHASE*.md
+ARCHITECTURE.md
+*.log
+.DS_Store
