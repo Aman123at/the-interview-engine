@@ -38,34 +38,53 @@ export function ActiveSessionCard({
   const summary = summarizeCustomization(fw, session.customization);
 
   return (
-    <Card className="border-emerald-500/30 bg-emerald-500/[0.04]">
-      <CardHeader className="flex flex-row items-start gap-4">
+    <Card
+      className="relative overflow-hidden border-[var(--accent-border)] bg-panel"
+      style={{
+        boxShadow:
+          "0 1px 0 0 rgba(255,255,255,0.04) inset, 0 12px 40px var(--accent-shadow)",
+      }}
+    >
+      {/* soft radial accent glow */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(60% 90% at 0% 0%, rgba(var(--accent-rgb), 0.18), transparent 60%)",
+        }}
+      />
+      <CardHeader className="relative flex flex-row items-start gap-4 pt-6">
         <span
-          className="bg-primary/10 text-primary inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md"
+          className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] text-white"
+          style={{
+            background: "var(--accent-grad)",
+            boxShadow: "0 10px 28px var(--accent-shadow)",
+          }}
           aria-hidden
         >
           <FrameworkIcon id={session.framework} className="h-5 w-5" />
         </span>
         <div className="space-y-1.5">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-emerald-300">
-            Active session · still running
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-text">
+            Active session
           </p>
-          <CardTitle className="text-base">
-            Continue your {label} sandbox
+          <CardTitle className="font-display text-[19px] font-semibold tracking-[-0.018em] text-t-hi">
+            Your {label} sandbox is running
           </CardTitle>
-          <CardDescription className="leading-relaxed">
+          <CardDescription className="text-t-mid leading-relaxed">
             You left this session running in the background. Jump back into the
             workspace, or close it to free up resources and start a new one.
           </CardDescription>
           {summary ? (
-            <p className="text-muted-foreground pt-1 font-mono text-[11px]">
+            <p className="text-t-lo pt-1 font-mono text-[12px]">
               {summary}
             </p>
           ) : null}
         </div>
       </CardHeader>
-      <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-0">
-        <p className="text-muted-foreground text-xs">
+      <CardContent className="relative flex flex-wrap items-center justify-between gap-3 pt-0">
+        <p className="text-t-lo font-mono text-[11px]">
           Started {relativeTime(session.enteredAt)}
         </p>
         <div className="flex items-center gap-2">
@@ -75,6 +94,7 @@ export function ActiveSessionCard({
             onClick={onClose}
             disabled={ending}
             aria-label="Close session"
+            className="text-t-mid hover:text-t-hi"
           >
             {ending ? (
               <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
@@ -83,7 +103,16 @@ export function ActiveSessionCard({
             )}
             {ending ? "Closing…" : "Close session"}
           </Button>
-          <Button size="sm" onClick={onContinue} disabled={ending}>
+          <Button
+            size="sm"
+            onClick={onContinue}
+            disabled={ending}
+            className="text-white"
+            style={{
+              background: "var(--accent-grad)",
+              boxShadow: "0 8px 22px var(--accent-shadow)",
+            }}
+          >
             <Play className="mr-1.5 h-3.5 w-3.5" aria-hidden />
             Continue session
           </Button>

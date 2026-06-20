@@ -42,7 +42,10 @@ import {
   type AdminListInterviewersResponse,
   type AdminListInterviewTypesResponse,
   type AdminStaffUserResponse,
+  bulkDeleteResponse,
   bulkImportResponse,
+  type BulkDeleteRequest,
+  type BulkDeleteResponse,
   type BulkImportRequest,
   type BulkImportResponse,
   type BulkTemplateKind,
@@ -727,6 +730,14 @@ export const api = {
         responseSchema: okResponse,
         schemaLabel: ensureKnown("DELETE /admin/interviewers/:id"),
       }),
+    bulkDeleteInterviewers: (body: BulkDeleteRequest) =>
+      request<BulkDeleteResponse>("/admin/interviewers/bulk-delete", {
+        method: "POST",
+        body,
+        silent: true,
+        responseSchema: bulkDeleteResponse,
+        schemaLabel: ensureKnown("POST /admin/interviewers/bulk-delete"),
+      }),
   },
 
   /**
@@ -910,6 +921,14 @@ export const api = {
         silent: true,
         responseSchema: okResponse,
         schemaLabel: ensureKnown("DELETE /candidates/:id"),
+      }),
+    bulkDelete: (body: BulkDeleteRequest) =>
+      request<BulkDeleteResponse>("/candidates/bulk-delete", {
+        method: "POST",
+        body,
+        silent: true,
+        responseSchema: bulkDeleteResponse,
+        schemaLabel: ensureKnown("POST /candidates/bulk-delete"),
       }),
   },
 

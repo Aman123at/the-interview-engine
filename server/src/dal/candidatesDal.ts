@@ -222,4 +222,26 @@ export const candidatesDal = {
       .set({ deletedAt: sql`now()` })
       .where(eq(candidates.id, id));
   },
+
+  /**
+   * Returns the ids of currently-live candidate rows for the given id list.
+   * Used by bulk-delete to partition the input into deleted/not-found without
+   * a round-trip per id.
+   */
+  async findLiveIds(ids: string[]): Promise<string[]> {
+    if (ids.length === 0) return [];
+    const rows = await getDb()
+      .select({ id: candidates.id })
+      .from(candidates)
+      .where(and(inArray(candidates.id, ids), isNull(candidates.deletedAt)));
+    return rows.map((r) => r.id);
+  },
+
+  async softDeleteMany(ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    await getDb()
+      .update(candidates)
+      .set({ deletedAt: sql`now()` })
+      .where(and(inArray(candidates.id, ids), isNull(candidates.deletedAt)));
+  },
 };

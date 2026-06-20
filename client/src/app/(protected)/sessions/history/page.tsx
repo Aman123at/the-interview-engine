@@ -108,27 +108,35 @@ export default function PastSessionsPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
+    <main className="mx-auto w-full max-w-[1240px] flex-1 px-10 py-12">
       <FadeIn>
         <div className="mb-6 flex items-center gap-3">
           <Link
             href="/dashboard"
             aria-label="Back to dashboard"
-            className={buttonVariants({ variant: "ghost", size: "sm" })}
+            className="text-t-mid hover:text-t-hi inline-flex items-center gap-1.5 text-sm transition-colors"
           >
-            <ArrowLeft className="mr-1.5 h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" />
             Dashboard
           </Link>
         </div>
-        <header className="mb-8">
-          <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-            <History className="text-muted-foreground h-6 w-6" />
-            Past Sessions
-          </h1>
-          <p className="text-muted-foreground mt-1.5 text-sm">
-            Your completed code interview sandboxes. Download or remove archived
-            sessions.
-          </p>
+        <header className="mb-8 flex items-start gap-4">
+          <span
+            className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-[12px]"
+            style={{ background: "var(--accent-soft)", color: "var(--accent-text)" }}
+            aria-hidden
+          >
+            <History className="h-5 w-5" />
+          </span>
+          <div>
+            <h1 className="font-display text-t-hi text-[40px] font-bold leading-tight tracking-[-0.022em]">
+              Past Sessions
+            </h1>
+            <p className="text-t-mid mt-1.5 text-[15px]">
+              Your completed code interview sandboxes. Download or remove archived
+              sessions.
+            </p>
+          </div>
         </header>
       </FadeIn>
 
@@ -140,21 +148,21 @@ export default function PastSessionsPage() {
         <EmptyState />
       ) : (
         <FadeIn>
-          <Card className="overflow-hidden p-0">
+          <Card className="overflow-hidden rounded-[18px] border-bd bg-panel p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="text-muted-foreground border-border/60 border-b text-xs uppercase tracking-wider">
+                <thead className="bg-panel-2 text-t-lo border-b border-bd font-mono text-[11px] uppercase tracking-[0.16em]">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium">Framework</th>
-                    <th className="px-4 py-3 text-left font-medium">Status</th>
-                    <th className="px-4 py-3 text-left font-medium">Started</th>
-                    <th className="px-4 py-3 text-left font-medium">Ended</th>
-                    <th className="px-4 py-3 text-left font-medium">Candidate</th>
-                    <th className="px-4 py-3 text-left font-medium">Rating</th>
-                    <th className="px-4 py-3 text-right font-medium">Actions</th>
+                    <th className="px-5 py-3.5 text-left font-medium">Framework</th>
+                    <th className="px-5 py-3.5 text-left font-medium">Status</th>
+                    <th className="px-5 py-3.5 text-left font-medium">Started</th>
+                    <th className="px-5 py-3.5 text-left font-medium">Ended</th>
+                    <th className="px-5 py-3.5 text-left font-medium">Candidate</th>
+                    <th className="px-5 py-3.5 text-left font-medium">Rating</th>
+                    <th className="px-5 py-3.5 text-right font-medium">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-border/40 divide-y">
+                <tbody className="divide-y divide-bd">
                   {items.map((item) => (
                     <HistoryRow
                       key={item.id}
@@ -239,58 +247,58 @@ function HistoryRow({
   }
 
   return (
-    <tr className="hover:bg-accent/30">
-      <td className="px-4 py-3">
-        <div className="flex items-start gap-2.5">
+    <tr className="hover:bg-panel-2 transition-colors">
+      <td className="px-5 py-4">
+        <div className="flex items-start gap-3">
           <span
-            className="bg-primary/10 text-primary inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
+            className="bg-icon-bg text-t-mid inline-flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[12px]"
             aria-hidden
           >
             <FrameworkIcon id={item.framework} className="h-4 w-4" />
           </span>
           <div className="min-w-0">
-            <p className="text-foreground truncate font-medium">
+            <p className="font-display text-t-hi text-[15px] font-semibold capitalize">
               {item.framework}
             </p>
             {item.customizationSummary ? (
               <p
-                className="text-muted-foreground truncate text-xs"
+                className="text-t-lo font-mono text-[11px]"
                 title={item.customizationSummary}
               >
                 {item.customizationSummary}
               </p>
             ) : null}
             <p
-              className="text-muted-foreground/70 mt-0.5 font-mono text-[10px]"
+              className="text-t-lo mt-0.5 font-mono text-[11px]"
               title={item.id}
             >
-              {item.id.slice(0, 8)}
+              ƒ{item.id.slice(0, 8)}
             </p>
           </div>
         </div>
       </td>
-      <td className="px-4 py-3 align-top">
+      <td className="px-5 py-4 align-top">
         <StatusBadge status={item.status} />
       </td>
-      <td className="px-4 py-3 align-top">
+      <td className="px-5 py-4 align-top">
         <TimeCell iso={item.startedAt} />
       </td>
-      <td className="px-4 py-3 align-top">
+      <td className="px-5 py-4 align-top">
         <TimeCell iso={item.endedAt} />
       </td>
-      <td className="px-4 py-3 align-top">
+      <td className="px-5 py-4 align-top">
         {item.candidateId ? (
-          <span className="text-foreground font-mono text-xs" title={item.candidateId}>
+          <span className="text-t-hi font-mono text-[12px]" title={item.candidateId}>
             {item.candidateId}
           </span>
         ) : (
-          <span className="text-muted-foreground/60 text-xs">—</span>
+          <span className="text-t-lo text-xs">—</span>
         )}
       </td>
-      <td className="px-4 py-3 align-top">
+      <td className="px-5 py-4 align-top">
         <Rating value={item.candidateRating} />
       </td>
-      <td className="px-4 py-3 align-top">
+      <td className="px-5 py-4 align-top">
         <div className="flex items-center justify-end gap-1">
           <Button
             variant="ghost"
@@ -303,6 +311,7 @@ function HistoryRow({
                 : "Download not available for this session"
             }
             aria-label="Download session"
+            className="text-t-mid hover:text-t-hi"
           >
             {downloading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -316,8 +325,9 @@ function HistoryRow({
             onClick={onDelete}
             title="Remove from history"
             aria-label="Remove session from history"
+            className="text-[var(--destructive)] hover:bg-[color-mix(in_oklab,var(--destructive)_9%,transparent)]"
           >
-            <Trash2 className="text-destructive/80 h-4 w-4" />
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       </td>
@@ -342,7 +352,7 @@ function StatusBadge({ status }: { status: SessionStatus }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize",
+        "inline-flex items-center rounded-full px-3 py-1 text-[11px] font-medium capitalize",
         tone,
       )}
     >
@@ -352,26 +362,26 @@ function StatusBadge({ status }: { status: SessionStatus }) {
 }
 
 const STATUS_TONES: Record<SessionStatus, string> = {
-  pending: "bg-muted text-muted-foreground",
+  pending: "bg-chip text-t-mid",
   initializing: "bg-blue-500/15 text-blue-500 dark:text-blue-300",
   running: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300",
   saving: "bg-blue-500/15 text-blue-500 dark:text-blue-300",
-  ended: "bg-muted text-muted-foreground",
+  ended: "bg-chip text-t-mid",
   error: "bg-red-500/15 text-red-600 dark:text-red-300",
   recoverable: "bg-yellow-500/15 text-yellow-700 dark:text-yellow-300",
 };
 
 function TimeCell({ iso }: { iso: string | Date | null }) {
-  if (!iso) return <span className="text-muted-foreground/60 text-xs">—</span>;
+  if (!iso) return <span className="text-t-lo text-xs">—</span>;
   const date = iso instanceof Date ? iso : new Date(iso);
   if (Number.isNaN(date.getTime())) {
-    return <span className="text-muted-foreground/60 text-xs">—</span>;
+    return <span className="text-t-lo text-xs">—</span>;
   }
   const exact = date.toLocaleString();
   return (
     <div className="flex flex-col" title={exact}>
-      <span className="text-foreground text-sm">{relativeTime(date)}</span>
-      <span className="text-muted-foreground/70 text-xs">
+      <span className="font-display text-t-hi text-[14px] font-semibold">{relativeTime(date)}</span>
+      <span className="text-t-lo font-mono text-[11px]">
         {date.toLocaleDateString()}
       </span>
     </div>
@@ -400,27 +410,17 @@ function relativeTime(date: Date): string {
 
 function Rating({ value }: { value: number | null }) {
   if (value === null) {
-    return <span className="text-muted-foreground/60 text-xs">Not rated</span>;
+    return <span className="text-t-lo text-xs">Not rated</span>;
   }
   return (
     <div
-      className="flex items-center gap-0.5"
+      className="flex items-center gap-1.5"
       role="img"
       aria-label={`Candidate rating ${value} out of 5`}
       title={`${value} / 5`}
     >
-      {[1, 2, 3, 4, 5].map((n) => (
-        <Star
-          key={n}
-          className={cn(
-            "h-4 w-4",
-            n <= value
-              ? "fill-yellow-400 text-yellow-400"
-              : "text-muted-foreground/30",
-          )}
-          aria-hidden
-        />
-      ))}
+      <Star className="h-4 w-4 fill-[var(--star)] text-[var(--star)]" aria-hidden />
+      <span className="text-t-hi font-mono text-[12px]">{value}/5</span>
     </div>
   );
 }
@@ -447,24 +447,23 @@ function HistorySkeleton() {
 
 function EmptyState() {
   return (
-    <Card>
-      <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+    <div className="rounded-[18px] border-[1.5px] border-dashed border-bd-2 bg-transparent">
+      <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
         <span
-          className="bg-muted text-muted-foreground inline-flex h-12 w-12 items-center justify-center rounded-full"
+          className="bg-icon-bg text-t-mid inline-flex h-12 w-12 items-center justify-center rounded-full"
           aria-hidden
         >
           <History className="h-6 w-6" />
         </span>
-        <h2 className="text-lg font-medium">No past sessions yet</h2>
-        <p className="text-muted-foreground max-w-md text-sm">
-          When you finish a coding interview sandbox, it will appear here so you
-          can review or download your work.
+        <h2 className="font-display text-t-hi text-[19px] font-semibold">No past sessions yet</h2>
+        <p className="text-t-mid max-w-md text-sm">
+          Completed sandboxes will be archived here.
         </p>
         <Link href="/dashboard" className={cn(buttonVariants(), "mt-2")}>
           Start a new session
         </Link>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 

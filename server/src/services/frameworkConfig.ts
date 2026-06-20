@@ -336,7 +336,22 @@ export function validateCustomization(
       out[g.id] = g.type === 'radio' ? g.default : [...g.default];
       continue;
     }
-    const parsed = groupValueSchema(g).safeParse(raw[g.id]);
+    // Normalize "empty" sentinels the client may send for an unselected
+    // optional control: "" for radios (cleared), null/undefined for either.
+    // For optional groups these all mean "not chosen" → fall back to the
+    // group's default. For required groups we let the schema below reject so
+    // the user sees a precise field error.
+    let value: unknown = raw[g.id];
+    const isUnset =
+      value === undefined ||
+      value === null ||
+      (g.type === 'radio' && value === '') ||
+      (g.type === 'checkbox' && Array.isArray(value) && value.length === 0);
+    if (isUnset && !g.required) {
+      out[g.id] = g.type === 'radio' ? g.default : [...g.default];
+      continue;
+    }
+    const parsed = groupValueSchema(g).safeParse(value);
     if (!parsed.success) {
       fieldErrors[g.id] = parsed.error.issues.map((i) => i.message);
       continue;

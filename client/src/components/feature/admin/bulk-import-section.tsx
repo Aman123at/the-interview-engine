@@ -208,9 +208,30 @@ interface ParseResult {
   unexpected: string[];
 }
 
+/**
+ * Map a raw type cell (which may be a key like `node` OR a user-friendly label
+ * like `Node` / `C++` — the Excel template now renders labels in the dropdown)
+ * to the canonical type key. Returns the original (trimmed) text when nothing
+ * matches so downstream validation can flag it as unknown.
+ */
+function normalizeTypeCell(
+  raw: string,
+  types: InterviewType[],
+): string {
+  const v = raw.trim();
+  if (!v) return "";
+  const lower = v.toLowerCase();
+  const byKey = types.find((t) => t.key.toLowerCase() === lower);
+  if (byKey) return byKey.key;
+  const byLabel = types.find((t) => t.label.toLowerCase() === lower);
+  if (byLabel) return byLabel.key;
+  return v;
+}
+
 async function parseWorkbook(
   file: File,
   kind: BulkTemplateKind,
+  types: InterviewType[],
 ): Promise<ParseResult> {
   const XLSX = await import("xlsx");
   const buf = await file.arrayBuffer();
@@ -256,7 +277,7 @@ async function parseWorkbook(
         name: cell("Candidate Name"),
         externalId: cell("Candidate ID"),
         types: Array.from({ length: BULK_MAX_TYPE_COLUMNS }, (_, i) =>
-          cell(candidateTypeHeader(i + 1)),
+          normalizeTypeCell(cell(candidateTypeHeader(i + 1)), types),
         ),
       };
       if (!rowIsBlank(candidate)) rows.push(candidate);
@@ -265,7 +286,7 @@ async function parseWorkbook(
         displayName: cell("Display Name"),
         email: cell("Email"),
         specs: Array.from({ length: BULK_MAX_TYPE_COLUMNS }, (_, i) => ({
-          typeKey: cell(candidateTypeHeader(i + 1)),
+          typeKey: normalizeTypeCell(cell(candidateTypeHeader(i + 1)), types),
           level: cell(interviewerLevelHeader(i + 1)),
         })),
       };
@@ -516,6 +537,12 @@ function CellSelect({
   error?: string;
   ariaLabel: string;
 }) {
+  // If `value` doesn't match any known option, render a synthetic placeholder
+  // option so the browser actually displays the bad value AND so clicking the
+  // "—" entry fires a real onChange (without this, the <select>'s selectedIndex
+  // silently defaults to 0 and picking "—" is a no-op).
+  const isUnknown =
+    value !== "" && !options.some((o) => o.value === value);
   return (
     <div className="min-w-0">
       <select
@@ -531,6 +558,9 @@ function CellSelect({
         )}
       >
         <option value="">—</option>
+        {isUnknown ? (
+          <option value={value}>{value} (unknown)</option>
+        ) : null}
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
@@ -668,7 +698,7 @@ export function BulkImportSection({
       setServerErrors([]);
       setGeneratedPasswords(null);
       try {
-        const r = await parseWorkbook(file, kind);
+        const r = await parseWorkbook(file, kind, types);
         if (r.missing.length > 0) {
           setColumnError({ missing: r.missing, unexpected: r.unexpected });
           setRows(null);
@@ -700,7 +730,7 @@ export function BulkImportSection({
         setParsing(false);
       }
     },
-    [kind],
+    [kind, types],
   );
 
   function onDrop(e: DragEvent<HTMLDivElement>) {

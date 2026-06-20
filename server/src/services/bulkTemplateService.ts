@@ -57,13 +57,16 @@ export async function buildBulkTemplateXlsx(
 
   // ---- Hidden Reference sheet ---------------------------------------------
   const ref = wb.addWorksheet('Reference', { state: 'hidden' });
+  // Column A drives the type dropdown — it holds the user-friendly LABEL so
+  // candidates see e.g. "Node", "C++" in the picker (the underlying key is
+  // mapped server-side from the label on import).
   ref.columns = [
-    { header: 'Type Key',   key: 'key',   width: 20 },
     { header: 'Type Label', key: 'label', width: 28 },
+    { header: 'Type Key',   key: 'key',   width: 20 },
     { header: 'Level',      key: 'level', width: 10 },
   ];
   const activeTypes = types.filter((t) => t.isActive);
-  activeTypes.forEach((t) => ref.addRow({ key: t.key, label: t.label }));
+  activeTypes.forEach((t) => ref.addRow({ label: t.label, key: t.key }));
   LEVELS.forEach((l, i) => {
     const r = ref.getRow(i + 2);
     r.getCell('level').value = l;

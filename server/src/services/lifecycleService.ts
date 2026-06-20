@@ -98,27 +98,42 @@ async function handleEvent(ev: DockerEvent): Promise<void> {
         await append(sessionId, 'container_destroy', { actorId: ev.Actor.ID }, 'info');
         break;
 
-      case 'oom':
+      case 'oom': {
         await append(sessionId, 'container_oom', { actorId: ev.Actor.ID }, 'error');
         // OOM almost always implies the container is dying — handler for `die`
         // will flip the session status. Mark recoverable defensively here in
-        // case `die` is delayed/lost.
-        await markUnexpectedDeath(session.id, 'oom', 137);
+        // case `die` is delayed/lost — unless the session is already mid-close
+        // (`saving`) or terminal, in which case the teardown is intentional.
+        const cur = await sessionsDal.findById(sessionId);
+        if (cur && (cur.status === 'running' || cur.status === 'initializing')) {
+          await markUnexpectedDeath(session.id, 'oom', 137);
+        }
         break;
+      }
 
       case 'die': {
         const code = exitCode != null ? Number(exitCode) : null;
+        // Check current status BEFORE we classify the level — a non-zero exit
+        // during an intentional teardown (`saving` mid-close, or already
+        // `ended`/`error`) is expected (docker stop → SIGTERM/SIGKILL) and
+        // must NOT be logged as `error`, since the client treats any
+        // error-level lifecycle event as a close failure.
+        const current = await sessionsDal.findById(sessionId);
+        const intentional =
+          !!current &&
+          (current.status === 'saving' ||
+            current.status === 'ended' ||
+            current.status === 'error');
+        const level: 'info' | 'error' =
+          code === 0 || intentional ? 'info' : 'error';
         await append(
           sessionId,
           'container_die',
           { actorId: ev.Actor.ID, exitCode: code, signal },
-          code === 0 ? 'info' : 'error',
+          level,
         );
-        // If the session is already terminal (ended/error) the death was
-        // initiated by us — nothing to do. Otherwise treat as unexpected.
-        const current = await sessionsDal.findById(sessionId);
         if (!current) break;
-        if (current.status === 'running' || current.status === 'initializing' || current.status === 'saving') {
+        if (current.status === 'running' || current.status === 'initializing') {
           await markUnexpectedDeath(current.id, code === 0 ? 'exited' : 'crash', code);
         }
         break;

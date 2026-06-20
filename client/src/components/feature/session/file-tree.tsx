@@ -364,7 +364,7 @@ function TreeRow(props: TreeRowProps) {
           onCommit={onCommitRename}
         />
       ) : (
-        <span className="text-foreground truncate">{node.name}</span>
+        <span className="text-foreground truncate cursor-pointer">{node.name}</span>
       )}
 
       {!renaming && !readOnly ? (
@@ -409,7 +409,7 @@ function TreeRow(props: TreeRowProps) {
               onStartRename();
             }}
           >
-            <Pencil className="h-3.5 w-3.5" />
+            <Pencil className="h-3.5 w-3.5 cursor-pointer" />
           </Button>
           <Button
             variant="ghost"
@@ -427,7 +427,7 @@ function TreeRow(props: TreeRowProps) {
               setMenuOpen(false);
             }}
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 className="h-3.5 w-3.5 cursor-pointer" />
           </Button>
           <span className="sr-only">
             <MoreVertical />

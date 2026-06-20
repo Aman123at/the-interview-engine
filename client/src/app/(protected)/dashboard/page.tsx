@@ -185,20 +185,33 @@ export default function DashboardPage() {
   const showFrameworkGrid = !hasCard;
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-6 py-12">
-      <FadeIn as="header" className="space-y-2">
-        <p className="text-muted-foreground font-mono text-xs uppercase tracking-[0.18em]">
+    <main className="relative mx-auto flex w-full max-w-[1240px] flex-1 flex-col gap-10 px-10 py-14">
+      <div className="aurora-hero-glow" aria-hidden />
+      <FadeIn as="header" className="relative z-[1] space-y-3">
+        <p className="text-t-lo font-mono text-[12px] font-medium uppercase tracking-[0.26em]">
           dashboard
         </p>
-        <h1 className="text-foreground text-3xl font-semibold tracking-tight">
-          {firstName ? `Welcome, ${firstName}.` : "Welcome."}
+        <h1 className="font-display text-t-hi text-[44px] font-bold leading-[1.05] tracking-[-0.02em] md:text-[62px] md:leading-[1.0] md:tracking-[-0.03em]">
+          {firstName ? (
+            <>
+              Welcome, <span className="text-accent-text">{firstName}.</span>
+            </>
+          ) : (
+            <>
+              Welcome, <span className="text-accent-text">Interview.</span>
+            </>
+          )}
         </h1>
-        <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
+        <p className="text-t-mid max-w-[560px] text-[16px] leading-relaxed">
           {recoverable
             ? "You have a paused session. Resume it to keep going, or end it to start a fresh one."
             : activeLocal
               ? "You have a sandbox running in the background. Jump back in, or close it to start a new one."
-              : "Pick a framework to spin up a sandbox. Options come from the server's /config/frameworks endpoint."}
+              : (
+                <>
+                  Pick a framework to spin up a sandbox.
+                </>
+              )}
         </p>
       </FadeIn>
 
@@ -207,7 +220,10 @@ export default function DashboardPage() {
         onValueChange={(v) => setTab(v as DashboardTab)}
         className="gap-6"
       >
-        <TabsList variant="line" className="self-start">
+        <TabsList
+          variant="line"
+          className="self-stretch border-b border-bd gap-[30px] !h-auto pb-[6px] !rounded-none"
+        >
           <TabsTrigger value="code">Code Sandbox</TabsTrigger>
           <TabsTrigger value="db_design">Database Design</TabsTrigger>
           <TabsTrigger value="system_design">System Design</TabsTrigger>
@@ -245,7 +261,7 @@ export default function DashboardPage() {
             >
               <h2
                 id="frameworks-heading"
-                className="text-foreground text-sm font-medium"
+                className="font-display text-t-hi text-[18px] font-semibold tracking-[-0.018em]"
               >
                 Frameworks
               </h2>

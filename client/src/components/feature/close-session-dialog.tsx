@@ -109,9 +109,15 @@ export function CloseSessionDialog({
     void syncCandidateThen(() => onConfirm({}));
   }
 
-  // Only Skip / Submit can close this dialog. We swallow `open === false`
-  // emitted by outside-click / escape / scrim so the interviewer never
-  // silently loses their input.
+  // Only Cancel / Skip / Submit can close this dialog. We swallow `open ===
+  // false` emitted by outside-click / escape / scrim so the interviewer never
+  // silently loses their input — Cancel is the explicit "I changed my mind"
+  // escape hatch.
+  function onCancel() {
+    if (busy) return;
+    onOpenChange(false);
+  }
+
   return (
     <Dialog
       open={open}
@@ -159,10 +165,10 @@ export function CloseSessionDialog({
                   >
                     <Star
                       className={cn(
-                        "h-6 w-6 transition-colors",
+                        "h-[30px] w-[30px] transition-colors",
                         filled
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-muted-foreground/40",
+                          ? "fill-[var(--star)] text-[var(--star)]"
+                          : "text-t-lo",
                       )}
                     />
                   </button>
@@ -194,10 +200,28 @@ export function CloseSessionDialog({
         </div>
 
         <DialogFooter className="sm:items-center">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onCancel}
+            disabled={busy}
+            className="sm:mr-auto"
+          >
+            Cancel
+          </Button>
           <Button type="button" variant="ghost" onClick={onSkip} disabled={busy}>
             {busy ? "Closing…" : "Skip"}
           </Button>
-          <Button type="button" onClick={onSubmit} disabled={busy}>
+          <Button
+            type="button"
+            onClick={onSubmit}
+            disabled={busy}
+            className="text-white"
+            style={{
+              background: "var(--accent-grad)",
+              boxShadow: "0 8px 22px var(--accent-shadow)",
+            }}
+          >
             {busy ? (
               <>
                 <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />

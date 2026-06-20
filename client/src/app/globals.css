@@ -7,6 +7,26 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  /* Aurora Grid design tokens — exposed as Tailwind utilities (bg-panel,
+     text-t-hi, border-bd2, etc.) so dashboard / table / modal components can
+     reference them directly without inline style overrides. */
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel2);
+  --color-inp: var(--inp);
+  --color-bd: var(--bd);
+  --color-bd-2: var(--bd2);
+  --color-t-hi: var(--t-hi);
+  --color-t-mid: var(--t-mid);
+  --color-t-lo: var(--t-lo);
+  --color-chip: var(--chip);
+  --color-icon-bg: var(--icon-bg);
+  --color-modal: var(--modal);
+  --color-star: var(--star);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-2: var(--accent-soft-2);
+  --color-accent-border: var(--accent-border);
+  --font-display: "Space Grotesk", var(--font-roboto-sans), ui-sans-serif, system-ui, sans-serif;
   /* IDE-surface tokens — both themes set their own values below. Used by the
      editor/terminal/log panes so they track the theme instead of hard-coding
      hex. Exported as Tailwind utilities (`bg-editor-surface`, etc.). */
@@ -18,8 +38,8 @@
      while the woff2 is fetched (display: swap). */
   --font-sans: var(--font-roboto-sans), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo,
-    Monaco, Consolas, "Liberation Mono", monospace;
+  --font-mono: var(--font-jetbrains-mono), var(--font-geist-mono), ui-monospace,
+    SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -60,28 +80,52 @@
 }
 
 :root {
-  /* LIGHT palette — accessible, IDE-friendly neutrals with a faint cool
-     tint matched to the dark theme so swapping doesn't feel hue-shifted.
-     `muted-foreground` is darkened from the shadcn default (0.556 → 0.46)
-     so it clears WCAG AA on `muted` for ≥12px UI text. */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.15 0.005 264);
-  --card: oklch(0.995 0 0);
-  --card-foreground: oklch(0.15 0.005 264);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0.005 264);
-  --primary: oklch(0.22 0.005 264);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.965 0.003 264);
-  --secondary-foreground: oklch(0.22 0.005 264);
-  --muted: oklch(0.965 0.003 264);
-  --muted-foreground: oklch(0.46 0.005 264);
-  --accent: oklch(0.95 0.005 264);
-  --accent-foreground: oklch(0.22 0.005 264);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.9 0.005 264);
-  --input: oklch(0.9 0.005 264);
-  --ring: oklch(0.65 0.01 264);
+  /* Aurora Grid — LIGHT theme. Accent = Orange (#f97316). */
+  --accent-rgb: 249, 115, 22;
+  --accent-main: #f97316;
+  --accent-bright: #fb923c;
+  --accent-dark: #ea580c;
+  --accent-third: #f59e0b;
+  --accent-text: var(--accent-dark);
+  --accent-soft: rgba(var(--accent-rgb), 0.10);
+  --accent-soft-2: rgba(var(--accent-rgb), 0.06);
+  --accent-border: rgba(var(--accent-rgb), 0.30);
+  --accent-shadow: rgba(var(--accent-rgb), 0.40);
+  --accent-grad: linear-gradient(135deg, var(--accent-main), var(--accent-dark));
+  --accent-grad-b: linear-gradient(135deg, var(--accent-bright), var(--accent-main));
+
+  --bg: #f7f7f9;
+  --panel: #ffffff;
+  --panel2: #f3f3f6;
+  --inp: #f3f3f6;
+  --bd: rgba(0,0,0,0.08);
+  --bd2: rgba(0,0,0,0.14);
+  --t-hi: #16161a;
+  --t-mid: #5c5c66;
+  --t-lo: #9a9aa2;
+  --icon-bg: #eeeef1;
+  --chip: #eeeef1;
+  --modal: #ffffff;
+  --star: #f59e0b;
+
+  --background: var(--bg);
+  --foreground: var(--t-hi);
+  --card: var(--panel);
+  --card-foreground: var(--t-hi);
+  --popover: var(--modal);
+  --popover-foreground: var(--t-hi);
+  --primary: var(--accent-main);
+  --primary-foreground: #ffffff;
+  --secondary: var(--panel2);
+  --secondary-foreground: var(--t-hi);
+  --muted: var(--panel2);
+  --muted-foreground: var(--t-mid);
+  --accent: var(--panel2);
+  --accent-foreground: var(--t-hi);
+  --destructive: #dc2626;
+  --border: var(--bd);
+  --input: var(--bd);
+  --ring: var(--accent-main);
   /* IDE surfaces — the editor / terminal / log panes use a slightly cooler
      near-white in light mode for visual separation from the page bg. */
   --editor-surface: oklch(0.985 0.003 264);
@@ -104,26 +148,44 @@
 }
 
 .dark {
-  /* Subtle cool tint on the darks — modern editor feel, still neutral.
-     Tiny shifts in chroma (0.005) read as more refined than pure gray. */
-  --background: oklch(0.165 0.005 264);
-  --foreground: oklch(0.97 0 0);
-  --card: oklch(0.21 0.005 264);
-  --card-foreground: oklch(0.97 0 0);
-  --popover: oklch(0.205 0.005 264);
-  --popover-foreground: oklch(0.97 0 0);
-  --primary: oklch(0.94 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.27 0.005 264);
-  --secondary-foreground: oklch(0.97 0 0);
-  --muted: oklch(0.27 0.005 264);
-  --muted-foreground: oklch(0.7 0.003 264);
-  --accent: oklch(0.275 0.005 264);
-  --accent-foreground: oklch(0.97 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 9%);
-  --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.6 0.01 264);
+  /* Aurora Grid — DARK theme. */
+  --accent-text: var(--accent-bright);
+  --accent-soft: rgba(var(--accent-rgb), 0.14);
+  --accent-soft-2: rgba(var(--accent-rgb), 0.07);
+  --accent-border: rgba(var(--accent-rgb), 0.34);
+
+  --bg: #0a0a0f;
+  --panel: #121219;
+  --panel2: #16161f;
+  --inp: #101014;
+  --bd: rgba(255,255,255,0.07);
+  --bd2: rgba(255,255,255,0.13);
+  --t-hi: #f4f4f6;
+  --t-mid: #a1a1ad;
+  --t-lo: #6b6b78;
+  --icon-bg: #1b1b25;
+  --chip: #1b1b25;
+  --modal: #15151c;
+  --star: #fbbf24;
+
+  --background: var(--bg);
+  --foreground: var(--t-hi);
+  --card: var(--panel);
+  --card-foreground: var(--t-hi);
+  --popover: var(--modal);
+  --popover-foreground: var(--t-hi);
+  --primary: var(--accent-main);
+  --primary-foreground: #ffffff;
+  --secondary: var(--panel2);
+  --secondary-foreground: var(--t-hi);
+  --muted: var(--panel2);
+  --muted-foreground: var(--t-mid);
+  --accent: var(--panel2);
+  --accent-foreground: var(--t-hi);
+  --destructive: #f87171;
+  --border: var(--bd);
+  --input: var(--bd2);
+  --ring: var(--accent-main);
   /* IDE surfaces — keep the near-black we used pre-tokens. */
   --editor-surface: oklch(0.13 0.005 264);
   --editor-surface-foreground: oklch(0.97 0 0);
@@ -261,4 +323,43 @@
 }
 .animate-loading-bar {
   animation: loading-bar 1.2s ease-in-out infinite;
+}
+
+/* Aurora Grid — modal pop-in animation. The 2px page-top gradient bar lives
+   on a fixed element so it sits above every surface. */
+@keyframes aurora-pop-in {
+  0%   { opacity: 0; transform: translateY(6px) scale(0.985); }
+  100% { opacity: 1; transform: translateY(0)  scale(1); }
+}
+.animate-aurora-pop-in { animation: aurora-pop-in 0.2s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* Fixed 2px top bar driven by the accent gradient — pinned above everything. */
+.aurora-top-line {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent-grad-b);
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* Soft radial accent glow behind the dashboard hero. */
+.aurora-hero-glow {
+  position: absolute;
+  inset: -10% -5% auto -5%;
+  height: 360px;
+  background: radial-gradient(
+    60% 100% at 14% 0%,
+    rgba(var(--accent-rgb), 0.18),
+    transparent 60%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+:root .aurora-hero-glow {
+  background: radial-gradient(
+    60% 100% at 14% 0%,
+    rgba(var(--accent-rgb), 0.12),
+    transparent 60%
+  );
 }

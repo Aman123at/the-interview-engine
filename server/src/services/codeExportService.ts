@@ -17,11 +17,9 @@
  */
 import { PassThrough, Readable, type Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import { createRequire } from 'node:module';
-const archiver = createRequire(import.meta.url)('archiver') as (
-  format: 'zip',
-  opts?: { zlib?: { level?: number } },
-) => import('archiver').Archiver;
+// archiver v8 is ESM and exports `ZipArchive` (a class) — the old
+// `archiver('zip', opts)` factory call was removed. Construct directly.
+import { ZipArchive, type Archiver } from 'archiver';
 import * as tar from 'tar-stream';
 import {
   getDocker,
@@ -222,7 +220,7 @@ export async function streamCodeZip(input: StreamCodeZipInput): Promise<void> {
     input.res.setHeader('Cache-Control', 'no-store');
     input.res.flushHeaders?.();
 
-    const archive = archiver('zip', { zlib: { level: 6 } });
+    const archive: Archiver = new ZipArchive({ zlib: { level: 6 } });
     let totalBytes = 0;
     let entryCount = 0;
     let aborted = false;

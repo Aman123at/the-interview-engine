@@ -4,6 +4,7 @@ import { ChevronRight, AlertTriangle } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { FrameworkIcon } from "@/lib/framework-icon";
 import { TiltCard } from "@/components/feature/tilt-card";
 import type { FrameworkDef } from "@/contracts";
@@ -15,16 +16,21 @@ interface FrameworkGridProps {
 
 export function FrameworkGrid({ frameworks, onSelect }: FrameworkGridProps) {
   const reduce = useReducedMotion();
+  // Keep "fullstack" first since it's the headline framework, but every card
+  // now uses the same neutral-default / accent-on-hover treatment.
+  const ordered = [...frameworks].sort((a, b) => {
+    if (a.id === "fullstack") return -1;
+    if (b.id === "fullstack") return 1;
+    return 0;
+  });
   return (
     <ul
       role="list"
-      className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      className="grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-3"
     >
-      {frameworks.map((f, i) => (
+      {ordered.map((f, i) => (
         <motion.li
           key={f.id}
-          // Subtle staggered fade-up — capped at 8 tiles' worth of delay so a
-          // long list doesn't drip in slowly. Disabled under reduced motion.
           initial={reduce ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
@@ -58,28 +64,56 @@ function FrameworkTile({ framework, onSelect }: FrameworkTileProps) {
       <button
         type="button"
         onClick={onSelect}
-        className="border-border/60 bg-card hover:border-border hover:bg-accent/40 focus-visible:ring-ring/50 focus-visible:border-ring relative flex h-full w-full flex-col items-start gap-4 rounded-[inherit] border p-5 text-left transition-colors outline-none focus-visible:ring-3"
+        className={cn(
+          "relative flex h-full min-h-[196px] w-full flex-col items-start gap-4 overflow-hidden rounded-[18px] border border-bd bg-panel p-[22px] text-left transition-all duration-150 outline-none",
+          "focus-visible:ring-2 focus-visible:ring-[var(--accent-main)]/50",
+          // Hover: accent border + glow shadow + soft radial accent fill via
+          // the inner overlay below. Applies to EVERY card.
+          "hover:-translate-y-[3px] hover:border-[var(--accent-border)] hover:shadow-[0_18px_50px_var(--accent-shadow)]",
+        )}
       >
-        <div className="flex w-full items-start justify-between gap-3">
+        {/* Soft accent glow — hidden by default, fades in on hover. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          style={{
+            background:
+              "radial-gradient(70% 80% at 100% 0%, rgba(var(--accent-rgb), 0.18), transparent 60%)",
+          }}
+        />
+
+        <div className="relative flex w-full items-start justify-between gap-3">
           <span
-            className="bg-primary/10 text-primary inline-flex h-10 w-10 items-center justify-center rounded-md"
+            className="relative inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-[14px] bg-icon-bg text-t-mid transition-colors duration-200 group-hover:text-white"
             aria-hidden
           >
-            <FrameworkIcon id={framework.id} className="h-5 w-5" />
+            <FrameworkIcon
+              id={framework.id}
+              className="h-5 w-5 relative z-10"
+            />
+            {/* gradient fill that fades in on hover behind the icon glyph */}
+            <span
+              aria-hidden
+              className="absolute inset-0 rounded-[inherit] opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+              style={{
+                background: "var(--accent-grad)",
+                boxShadow: "0 10px 28px var(--accent-shadow)",
+              }}
+            />
           </span>
           <ChevronRight
-            className="text-muted-foreground group-hover:text-foreground h-4 w-4 transition-colors"
+            className="h-5 w-5 text-t-lo transition-colors group-hover:text-accent-text"
             aria-hidden
           />
         </div>
-        <div className="space-y-1">
-          <h3 className="text-foreground text-base font-medium tracking-tight">
+        <div className="relative mt-auto space-y-1.5">
+          <h3 className="font-display text-[19px] font-semibold tracking-[-0.018em] text-t-hi">
             {framework.label + fullStackText}
           </h3>
+          <p className="text-t-lo font-mono text-[12px] transition-colors duration-200 group-hover:text-accent-text">
+            {count} {count === 1 ? "option" : "options"} to customize
+          </p>
         </div>
-        <p className="text-muted-foreground mt-auto text-[11px]">
-          {count} {count === 1 ? "option" : "options"} to customize
-        </p>
       </button>
     </TiltCard>
   );

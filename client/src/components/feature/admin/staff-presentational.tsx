@@ -7,7 +7,7 @@ export function StaffTable({
   columns,
   rows,
 }: {
-  columns: string[];
+  columns: React.ReactNode[];
   rows: { key: string; cells: React.ReactNode[] }[];
 }) {
   return (

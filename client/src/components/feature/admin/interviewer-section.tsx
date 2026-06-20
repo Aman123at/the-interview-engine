@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,6 +31,8 @@ export function InterviewerSection() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<AdminInterviewerUser | null>(null);
   const [deleting, setDeleting] = useState<AdminInterviewerUser | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -76,14 +78,84 @@ export function InterviewerSection() {
     }
   }
 
+  function toggleOne(id: string, checked: boolean) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  function toggleAllVisible(checked: boolean) {
+    if (!interviewers) return;
+    setSelectedIds(checked ? new Set(interviewers.map((u) => u.id)) : new Set());
+  }
+
+  useEffect(() => {
+    if (!interviewers) return;
+    setSelectedIds((prev) => {
+      if (prev.size === 0) return prev;
+      const visible = new Set(interviewers.map((u) => u.id));
+      let changed = false;
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (visible.has(id)) next.add(id);
+        else changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [interviewers]);
+
+  async function confirmBulkDelete() {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    setBusy(true);
+    try {
+      const res = await api.admin.bulkDeleteInterviewers({ ids });
+      const deleted = new Set(res.deleted);
+      setInterviewers((prev) => prev?.filter((x) => !deleted.has(x.id)) ?? null);
+      setSelectedIds(new Set());
+      setBulkDeleteOpen(false);
+      const noun = res.deleted.length === 1 ? "interviewer" : "interviewers";
+      toast.success(`Removed ${res.deleted.length} ${noun}.`);
+      if (res.notFound.length > 0) {
+        toast.message(
+          `${res.notFound.length} were already removed elsewhere — list refreshed.`,
+        );
+      }
+    } catch (err) {
+      toast.error(describeStaffError(err, "Couldn't remove interviewers."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <p className="text-muted-foreground text-sm">
-          {interviewers
-            ? `${interviewers.length} interviewer${interviewers.length === 1 ? "" : "s"}`
-            : ""}
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-muted-foreground text-sm">
+            {interviewers
+              ? `${interviewers.length} interviewer${interviewers.length === 1 ? "" : "s"}`
+              : ""}
+          </p>
+          {selectedIds.size > 0 ? (
+            <>
+              <p className="text-muted-foreground text-xs">
+                · {selectedIds.size} selected
+              </p>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => setBulkDeleteOpen(true)}
+              >
+                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                Delete selected
+              </Button>
+            </>
+          ) : null}
+        </div>
         <Button
           onClick={() => {
             setEditing(null);
@@ -105,10 +177,45 @@ export function InterviewerSection() {
         />
       ) : (
         <StaffTable
-          columns={["Name", "Email", "Specializations", "Status", ""]}
+          columns={[
+            <input
+              key="sel"
+              type="checkbox"
+              aria-label="Select all interviewers"
+              checked={
+                interviewers.length > 0 &&
+                interviewers.every((u) => selectedIds.has(u.id))
+              }
+              ref={(el) => {
+                if (!el) return;
+                const someSelected = interviewers.some((u) =>
+                  selectedIds.has(u.id),
+                );
+                const allSelected = interviewers.every((u) =>
+                  selectedIds.has(u.id),
+                );
+                el.indeterminate = someSelected && !allSelected;
+              }}
+              onChange={(e) => toggleAllVisible(e.target.checked)}
+              className="h-3.5 w-3.5"
+            />,
+            "Name",
+            "Email",
+            "Specializations",
+            "Status",
+            "",
+          ]}
           rows={interviewers.map((u) => ({
             key: u.id,
             cells: [
+              <input
+                key="sel"
+                type="checkbox"
+                aria-label={`Select ${u.displayName}`}
+                checked={selectedIds.has(u.id)}
+                onChange={(e) => toggleOne(u.id, e.target.checked)}
+                className="h-3.5 w-3.5"
+              />,
               <span key="n" className="text-foreground font-medium">
                 {u.displayName}
               </span>,
@@ -136,6 +243,25 @@ export function InterviewerSection() {
         types={types}
         user={editing}
         onSaved={upsert}
+      />
+
+      <ConfirmDeleteDialog
+        open={bulkDeleteOpen}
+        onOpenChange={(o) => !o && setBulkDeleteOpen(false)}
+        title={`Remove ${selectedIds.size} interviewer${selectedIds.size === 1 ? "" : "s"}?`}
+        description={
+          <>
+            Remove{" "}
+            <span className="text-foreground font-medium">
+              {selectedIds.size}
+            </span>{" "}
+            interviewer{selectedIds.size === 1 ? "" : "s"}. Their accounts will
+            be deactivated and they won't be able to sign in.
+          </>
+        }
+        confirmLabel={`Remove ${selectedIds.size}`}
+        busy={busy}
+        onConfirm={confirmBulkDelete}
       />
 
       <ConfirmDeleteDialog

@@ -606,6 +606,21 @@ export type UpdateCandidateRequest = z.infer<typeof updateCandidateRequest>;
 export const candidateIdParams = z.object({ id: uuidSchema });
 export type CandidateIdParams = z.infer<typeof candidateIdParams>;
 
+/**
+ * Bulk soft-delete payload — shared shape used by HR-side candidate and
+ * interviewer multi-select. Capped at 500 to match `BULK_IMPORT_MAX_ROWS`.
+ */
+export const bulkDeleteRequest = z.object({
+  ids: z.array(uuidSchema).min(1).max(500),
+});
+export type BulkDeleteRequest = z.infer<typeof bulkDeleteRequest>;
+
+export const bulkDeleteResponse = z.object({
+  deleted: z.array(uuidSchema),
+  notFound: z.array(uuidSchema),
+});
+export type BulkDeleteResponse = z.infer<typeof bulkDeleteResponse>;
+
 // --- HR cross-interviewer reporting (Phase 30e) ---------------------------
 
 /**
@@ -853,6 +868,10 @@ export const endpoints = {
     response: adminInterviewerResponse,
   },
   'DELETE /admin/interviewers/:id': { request: emptyBody, response: okResponse },
+  'POST /admin/interviewers/bulk-delete': {
+    request: bulkDeleteRequest,
+    response: bulkDeleteResponse,
+  },
 
   // Phase 30c — candidates (HR-owned)
   'POST /candidates': { request: createCandidateRequest, response: candidateResponse },
@@ -860,6 +879,10 @@ export const endpoints = {
   'GET /candidates/:id': { request: emptyBody, response: candidateResponse },
   'PATCH /candidates/:id': { request: updateCandidateRequest, response: candidateResponse },
   'DELETE /candidates/:id': { request: emptyBody, response: okResponse },
+  'POST /candidates/bulk-delete': {
+    request: bulkDeleteRequest,
+    response: bulkDeleteResponse,
+  },
   'GET /admin/interview-types': {
     request: emptyBody,
     response: adminListInterviewTypesResponse,

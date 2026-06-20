@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, RotateCcw, AlertCircle } from "lucide-react";
+import { Loader2, RotateCcw, AlertCircle, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -120,10 +120,11 @@ export function FrameworkDialog({
           <div className="flex items-center gap-3">
             {framework ? (
               <span
-                className="bg-primary/10 text-primary inline-flex h-9 w-9 items-center justify-center rounded-md"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-[12px]"
+                style={{ background: "var(--accent-soft)", color: "var(--accent-text)" }}
                 aria-hidden
               >
-                <FrameworkIcon id={framework.id} className="h-4 w-4" />
+                <FrameworkIcon id={framework.id} className="h-5 w-5" />
               </span>
             ) : null}
             <div className="flex flex-col gap-0.5">
@@ -205,14 +206,26 @@ export function FrameworkDialog({
           >
             Cancel
           </Button>
-          <Button type="button" onClick={onStart} disabled={submitting}>
+          <Button
+            type="button"
+            onClick={onStart}
+            disabled={submitting}
+            className="text-white"
+            style={{
+              background: "var(--accent-grad)",
+              boxShadow: "0 8px 22px var(--accent-shadow)",
+            }}
+          >
             {submitting ? (
               <>
                 <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
                 Starting…
               </>
             ) : (
-              "Start"
+              <>
+                <Play className="mr-1.5 h-4 w-4" aria-hidden />
+                Start
+              </>
             )}
           </Button>
         </DialogFooter>
@@ -312,7 +325,7 @@ function RadioField({
           <label
             key={opt.id}
             htmlFor={id}
-            className="border-border/60 hover:bg-accent/40 has-data-checked:border-primary/60 has-data-checked:bg-accent/50 flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2.5 transition-colors"
+            className="flex cursor-pointer items-start gap-3 rounded-[12px] border border-bd-2 px-3.5 py-3 transition-colors hover:bg-panel-2 has-data-checked:border-[var(--accent-main)] has-data-checked:bg-[var(--accent-soft-2)]"
           >
             <RadioGroupItem value={opt.id} id={id} className="mt-0.5" />
             <span className="flex flex-col gap-0.5">
@@ -351,7 +364,7 @@ function CheckboxField({
           <label
             key={opt.id}
             htmlFor={id}
-            className="border-border/60 hover:bg-accent/40 has-data-checked:border-primary/60 has-data-checked:bg-accent/50 flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2.5 transition-colors"
+            className="flex cursor-pointer items-start gap-3 rounded-[12px] border border-bd-2 px-3.5 py-3 transition-colors hover:bg-panel-2 has-data-checked:border-[var(--accent-main)] has-data-checked:bg-[var(--accent-soft-2)]"
           >
             <Checkbox
               id={id}

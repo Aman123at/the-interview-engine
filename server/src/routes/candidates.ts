@@ -12,10 +12,12 @@
 import { Router } from 'express';
 import { requireAuth, requireRole } from '@/middleware/auth.js';
 import {
+  bulkDeleteRequest,
   candidateIdParams,
   createCandidateRequest,
   listCandidatesQuery,
   updateCandidateRequest,
+  type BulkDeleteResponse,
   type CandidateDto,
   type CandidateResponse,
   type ListCandidatesResponse,
@@ -141,6 +143,27 @@ candidatesRouter.patch('/:id', async (req, res, next) => {
       'hr updated candidate',
     );
     const resp: CandidateResponse = { candidate: toDto(reloaded) };
+    res.json(resp);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /candidates/bulk-delete — soft delete many. Declared BEFORE
+// `/:id` so `bulk-delete` doesn't get parsed as a candidate id.
+candidatesRouter.post('/bulk-delete', async (req, res, next) => {
+  try {
+    const body = bulkDeleteRequest.parse(req.body);
+    const ids = Array.from(new Set(body.ids));
+    const liveIds = await candidatesDal.findLiveIds(ids);
+    const liveSet = new Set(liveIds);
+    const notFound = ids.filter((id) => !liveSet.has(id));
+    await candidatesDal.softDeleteMany(liveIds);
+    req.log.info(
+      { requested: ids.length, deleted: liveIds.length, notFound: notFound.length },
+      'hr bulk-soft-deleted candidates',
+    );
+    const resp: BulkDeleteResponse = { deleted: liveIds, notFound };
     res.json(resp);
   } catch (err) {
     next(err);

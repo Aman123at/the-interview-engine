@@ -1,29 +1,25 @@
 "use client";
 
-import { Library } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Book } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface LibraryButtonProps {
-  size?: "sm" | "default";
-  variant?: "default" | "outline" | "ghost";
   className?: string;
 }
 
 /** Opens /library in a new tab. The library is public — no auth required. */
-export function LibraryButton({
-  size = "sm",
-  variant = "outline",
-  className,
-}: LibraryButtonProps) {
+export function LibraryButton({ className }: LibraryButtonProps) {
   return (
-    <Button
-      size={size}
-      variant={variant}
-      className={className}
+    <button
+      type="button"
       onClick={() => window.open("/library", "_blank", "noopener,noreferrer")}
+      className={cn(
+        "inline-flex items-center gap-2 rounded-[10px] border border-bd-2 px-3.5 py-[9px] text-[13px] font-medium text-t-mid transition-colors hover:bg-panel-2 hover:text-t-hi",
+        className,
+      )}
     >
-      <Library className="mr-1.5 h-4 w-4" aria-hidden />
+      <Book className="h-4 w-4" aria-hidden />
       Access Component Library
-    </Button>
+    </button>
   );
 }

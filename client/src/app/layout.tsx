@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Roboto, Geist_Mono } from "next/font/google";
+import { Roboto, Geist_Mono, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth/auth-context";
@@ -24,6 +24,24 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Aurora Grid display face. Used by H1/H2 + framework card titles via the
+// `font-display` Tailwind utility (mapped in globals.css `@theme`).
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  display: "swap",
+});
+
+// JetBrains Mono — eyebrows, candidate IDs, mono metadata. Surfaces under the
+// existing `font-mono` utility alongside Geist Mono via the CSS variable chain.
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Interview Sandbox",
   description: "Technical interview sandbox client",
@@ -42,7 +60,7 @@ export default function RootLayout({
     // script mutates the DOM before React hydrates.
     <html
       lang="en"
-      className={`${robotoSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${robotoSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="bg-background text-foreground min-h-full flex flex-col font-sans">

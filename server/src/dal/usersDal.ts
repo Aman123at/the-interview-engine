@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { getDb } from '@/db/connection.js';
 import {
   users,
@@ -143,6 +143,36 @@ export const usersDal = {
    * this user. Called on logout and (later) on password reset.
    * Returns the new tokenVersion.
    */
+  /**
+   * Return the ids of currently-live users matching the given id list AND
+   * role. Used by bulk-delete (interviewer side) to filter out cross-role
+   * ids and already-deleted rows without N round-trips.
+   */
+  async findLiveIdsByRole(ids: string[], role: UserRole): Promise<string[]> {
+    if (ids.length === 0) return [];
+    const rows = await getDb()
+      .select({ id: users.id })
+      .from(users)
+      .where(and(inArray(users.id, ids), eq(users.role, role), isNull(users.deletedAt)));
+    return rows.map((r) => r.id);
+  },
+
+  async softDeleteMany(ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    await getDb()
+      .update(users)
+      .set({ deletedAt: new Date() })
+      .where(and(inArray(users.id, ids), isNull(users.deletedAt)));
+  },
+
+  async bumpTokenVersionMany(ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    await getDb()
+      .update(users)
+      .set({ tokenVersion: sql`${users.tokenVersion} + 1` })
+      .where(inArray(users.id, ids));
+  },
+
   async bumpTokenVersion(id: string): Promise<number | null> {
     const [row] = await getDb()
       .update(users)

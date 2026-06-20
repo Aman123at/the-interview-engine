@@ -26,6 +26,7 @@ import bcrypt from 'bcrypt';
 import { requireAuth, requireRole } from '@/middleware/auth.js';
 import {
   adminUserIdParams,
+  bulkDeleteRequest,
   onboardHrRequest,
   updateHrRequest,
   onboardInterviewerRequest,
@@ -36,6 +37,7 @@ import {
   type AdminInterviewerResponse,
   type AdminStaffUser,
   type AdminInterviewerUser,
+  type BulkDeleteResponse,
   type SpecializationInput,
   type OkResponse,
   type AdminListInterviewTypesResponse,
@@ -279,6 +281,30 @@ staffSharedRouter.patch('/interviewers/:id', async (req, res, next) => {
       'admin updated interviewer',
     );
     const resp: AdminInterviewerResponse = { user: await toInterviewerUser(updated) };
+    res.json(resp);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /admin/interviewers/bulk-delete — soft delete many. Declared BEFORE
+// `/interviewers/:id` so `bulk-delete` doesn't get parsed as a user uuid.
+// findLiveIdsByRole filters out non-interviewer ids and already-deleted rows,
+// matching the per-row guard in DELETE /interviewers/:id.
+staffSharedRouter.post('/interviewers/bulk-delete', async (req, res, next) => {
+  try {
+    const body = bulkDeleteRequest.parse(req.body);
+    const ids = Array.from(new Set(body.ids));
+    const liveIds = await usersDal.findLiveIdsByRole(ids, 'interviewer');
+    const liveSet = new Set(liveIds);
+    const notFound = ids.filter((id) => !liveSet.has(id));
+    await usersDal.softDeleteMany(liveIds);
+    await usersDal.bumpTokenVersionMany(liveIds);
+    req.log.info(
+      { requested: ids.length, deleted: liveIds.length, notFound: notFound.length },
+      'admin bulk-soft-deleted interviewers',
+    );
+    const resp: BulkDeleteResponse = { deleted: liveIds, notFound };
     res.json(resp);
   } catch (err) {
     next(err);
