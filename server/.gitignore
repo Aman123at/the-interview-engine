@@ -12,6 +12,6 @@ coverage
 .claude
 CHANGES_PHASE11.md
 CLAUDE.md
-scripts
+scripts/*.ts
 infra
 .env
